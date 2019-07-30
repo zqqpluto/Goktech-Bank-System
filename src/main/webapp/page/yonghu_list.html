@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>权限</title>
+<link rel="stylesheet" type="text/css"
+	href="/Goktech-Bank-System/easyui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css"
+	href="/Goktech-Bank-System/easyui/themes/icon.css">
+<link rel="stylesheet" type="text/css"
+	href="/Goktech-Bank-System/easyui/demo/demo.css">
+<script type="text/javascript"
+	src="/Goktech-Bank-System/common/lib/jquery-1.8.3.min.js"></script>
+<script type="text/javascript"
+	src="/Goktech-Bank-System/easyui/jquery.easyui.min.js"></script>
+<style type="text/css">
+/*	折叠层*/
+.black_overlay {
+	display: none;
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	width: 100%;
+	height: 100%;
+	background-color: black;
+	z-index: 1001;
+	-moz-opacity: 0.6;
+	opacity: .60;
+	filter: alpha(opacity = 60);
+}
+
+.white_content {
+	display: none;
+	position: absolute;
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 50%;
+	padding: 16px;
+	/*border: 16px solid orange;*/
+	background-color: white;
+	z-index: 1002;
+	overflow: auto;
+}
+</style>
+</head>
+
+<body>
+	<table id="dg" title="用户管理" style="width: 100%;"
+		data-options="singleSelect:true,pagination:true,url:'/Goktech-Bank-System/yongh/easyuiGetData',method:'get',toolbar:'#tb'">
+		<thead>
+			<tr>
+				<th style="width:18%" data-options="field:'id',width:300,align:'left'">id</th>
+				<th style="width:18%"data-options="field:'yonghzh',width:250,align:'left'">用户账户</th>
+				<th style="width:16.5%"data-options="field:'yonghxm',width:250,align:'left'">用户姓名</th>
+				<th style="width:16.5%"data-options="field:'yonghmm',width:250,align:'left'">用户密码</th>
+				<th style="width:16.5%"data-options="field:'quanxmc',width:250,align:'left'">权限</th>
+				<th style="width:16.5%"data-options="field:'_operate',width:280,align:'center',formatter:rowformater">操作</th>
+			</tr>
+		</thead>
+	</table>
+
+	<div id="tb">
+		用户账户 <input type="text" name="standard.name" id="zh" /><a
+			id="standardQueryBtn" href="javascript:void(0)"
+			class="easyui-linkbutton" data-options="iconCls:'icon-search'">搜索</a>
+	</div>
+
+	<div id="light" class="white_content">
+
+		<form action="/Goktech-Bank-System/yongh/save" method="post" id="form" onsubmit="return check(this)">
+			<input type="hidden" name="id" id="yonghid">
+			用户账户 :<input id="yonghzh" type="text" name="yonghzh" /><br> 
+			用户姓名:<input id="yonghxm" type="text" name="yonghxm" /><br> 
+			用户密码:<input id="password" type="password" name="yonghmm" /><br> 
+			选中权限： <select style="margin-top: 10px;" name="jiaosid" id="note_type"></select><br>
+				<input type="submit" value="保存">
+		</form>
+		<a href="javascript:void(0)" onclick="two()">Close</a>
+	</div>
+	<div id="fade" class="black_overlay"></div>
+
+	<script type="text/javascript">
+	
+	function rowformater(value, row, index) {
+			return "<button onclick=delYongh('"+row.id+"')>删除</button>"; 
+	}
+	
+	function  delYongh(id) {
+		if (confirm("确定删除吗？")==true) {
+			$.get("/Goktech-Bank-System/yongh/delYongh",{"id":id},function(data){
+				if (data.code == -1) {
+					alert("删除失败");
+				}
+				window.location.reload();
+			})
+		}else{
+			return;
+		}
+	}
+	
+	function check() {
+		if ($("#password").val() == "") {
+			alert("密码不能为空");
+			return false;
+		}
+		return true;
+	}
+	
+		$(function() {
+			var pager = $('#dg').datagrid().datagrid('getPager'); // get the pager of datagrid
+			pager.pagination({
+				buttons : [
+						
+						{
+							iconCls : 'icon-add',
+							handler : function(event, data) {
+								$.get("/Goktech-Bank-System/quanx/easyuiGetData",{"rows":100},function(data1){
+									console.log(data1)
+									if (data1.total > 0) {
+										var yongh = data1.rows;
+										var h = '<option value="0000"></option>';
+										$.each(yongh,function(){
+											h += '<option value="'+this.id+'">'+this.quanxmc+'</option>'
+										});
+										$("#note_type").html(h);
+									}
+								})
+								one();
+							}
+						},
+						{
+							iconCls : 'icon-edit',
+							handler : function() {
+								var row = $('#dg').datagrid('getSelected');
+								$.get("/Goktech-Bank-System/yongh/getInfoById",{"id":row.id},function(data2){
+									$("#yonghzh").attr("value",data2.yonghzh);
+									$("#yonghxm").val(data2.yonghxm);
+									$("#yonghid").val(data2.id)
+									$("#password").val(data2.yonghmm)
+									$("#form").attr("action","/Goktech-Bank-System/yongh/modify")
+									
+									$.get("/Goktech-Bank-System/quanx/easyuiGetData",{"rows":100},function(data1){
+										if (data1.total > 0) {
+											var yongh = data1.rows;
+											var h = '<option value="0000"></option>';
+											$.each(yongh,function(){
+												if (this.id == row.jiaosid) {
+													h += '<option  selected="selected"  value="'+this.id+'">'+this.quanxmc+'</option>'
+												}else{
+													h += '<option value="'+this.id+'">'+this.quanxmc+'</option>'
+												}
+											});
+											$("#note_type").html(h);
+										}
+									})
+								})
+								
+								
+								
+								
+								one();
+								
+								/* var row = $('#dg').datagrid('getSelected');
+								if (row) {
+									$.messager.alert('Info', row.itemid + ":"
+											+ row.productid + ":" + row.attr1);
+								} */
+							}
+						} ]
+			});
+		})
+		
+		function one() {
+		document.getElementById('light').style.display = 'block';
+		document.getElementById('fade').style.display = 'block'
+	}
+
+	function two() {
+		//先获取数据  通过 ajax提交数据 然后在让当前弹出层消失
+		//$("form")[0].submit();
+		document.getElementById('light').style.display = 'none';
+		document.getElementById('fade').style.display = 'none'
+
+	}
+
+		function getSelected() {
+			var row = $('#dg').datagrid('getSelected');
+			if (row) {
+				$.messager.alert('Info', row.itemid + ":" + row.productid + ":"
+						+ row.attr1);
+			}
+		}
+		$("#standardQueryBtn").click(function() {
+			//$("#dg") 获取easui的数据表格   datagrid("load" 重新加载表格 后面的几个数据是请求的参数
+			$("#dg").datagrid("load", {
+				"zh" : $("#zh").val()
+			});
+		});
+	</script>
+</body>
+
+</html>
